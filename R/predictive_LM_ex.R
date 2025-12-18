@@ -7,6 +7,7 @@
 #' @param object an objects inheriting from class "LMf" or "Vs_LM".
 #' @param ex_data An external validation dataset with variable names identical to those in the model-building dataset.
 #' @param n_group Integer, number of groups for calibration (default=10)
+#' @param seq_len Optional numeric vector of landmark times to evaluate. If NULL (default), uses the landmark times from the model object
 #'
 #' @return A list containing:
 #' \itemize{
@@ -42,7 +43,10 @@ Predictive_LM_ex <- function(object, ex_data, n_group = 10) {
   # Extract model components
   TSet <- object$data
   Model <- object$Model
-  sl <- object$tw$sl
+  if (is.null(seq_len))
+    sl <- object$tw$sl
+  else
+    sl<-seq_len
   nsl <- length(sl)
   id <- object$id
   w <- object$tw$w
@@ -223,5 +227,6 @@ Predictive_LM_ex <- function(object, ex_data, n_group = 10) {
     all_cal_autual = all_cal_autual
   ))
 }
+
 
 
