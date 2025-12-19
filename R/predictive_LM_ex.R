@@ -22,7 +22,7 @@
 #' @importFrom survival survfit Surv
 #' @importFrom Hmisc cut2
 #' @export
-Predictive_LM_ex <- function(object, ex_data, n_group = 10) {
+Predictive_LM_ex <- function(object, ex_data, n_group = 10,seq_len=NULL) {
 
   # Load required packages
   if (!require("survivalROC", quietly = TRUE)) {
@@ -227,6 +227,7 @@ Predictive_LM_ex <- function(object, ex_data, n_group = 10) {
     all_cal_autual = all_cal_autual
   ))
 }
+
 
 
 
