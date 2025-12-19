@@ -4,7 +4,7 @@
 \alias{Predictive_LM_ex}
 \title{External Validation for Landmarking Models}
 \usage{
-Predictive_LM_ex(object, ex_data, n_group = 10,seq_len=NULL)
+Predictive_LM_ex(object, ex_data, n_group = 10, seq_len = NULL)
 }
 \arguments{
 \item{object}{an objects inheriting from class "LMf" or "Vs_LM".}
@@ -12,6 +12,8 @@ Predictive_LM_ex(object, ex_data, n_group = 10,seq_len=NULL)
 \item{ex_data}{An external validation dataset with variable names identical to those in the model-building dataset.}
 
 \item{n_group}{Integer, number of groups for calibration (default=10)}
+
+\item{seq_len}{Optional numeric vector of landmark times to evaluate. If NULL (default), uses the landmark times from the model object}
 }
 \value{
 A list containing:
@@ -29,3 +31,4 @@ This function performs external validation of landmarking models on an external 
 It evaluates discrimination (C-index, AUC), calibration, and overall performance (Brier score)
 at multiple landmark times.
 }
+
