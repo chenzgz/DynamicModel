@@ -4,7 +4,7 @@
 \alias{Predictive_LM_ex}
 \title{External Validation for Landmarking Models}
 \usage{
-Predictive_LM_ex(object, ex_data, n_group = 10)
+Predictive_LM_ex(object, ex_data, n_group = 10,seq_len=NULL)
 }
 \arguments{
 \item{object}{an objects inheriting from class "LMf" or "Vs_LM".}
