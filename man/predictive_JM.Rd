@@ -4,7 +4,7 @@
 \alias{predictive_JM}
 \title{Predictive Performance Assessment for Joint Models}
 \usage{
-predictive_JM(jointFit,data,method,formulas,random_effect_formulas,form_splines,surv_formula,seq_len,w,n,K,seed,r)
+predictive_JM(jointFit,data,method,formulas,random_effect_formulas,families,form_splines,surv_formula,seq_len,w,n,K,seed,r)
 }
 \arguments{
 \item{jointFit}{A fitted joint model object from the `jm` function}
