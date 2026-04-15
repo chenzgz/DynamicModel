@@ -3,7 +3,7 @@
 #' This function evaluates the predictive performance of joint models using
 #' different validation methods including data splitting, K-fold cross-validation,
 #' and bootstrap validation.
-#' @usage predictive_JM(jointFit,data,method,formulas,random_effect_formulas,form_splines,surv_formula,seq_len,w,n,K,seed,r)
+#' @usage predictive_JM(jointFit,data,method,formulas,random_effect_formulas,families,form_splines,surv_formula,seq_len,w,n,K,seed,r)
 #' @param jointFit A fitted joint model object from the `jm` function
 #' @param data A data.frame containing the longitudinal and survival data
 #' @param method Character string specifying validation method: "split", "K-fold", or "boot"
