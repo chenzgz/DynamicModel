@@ -9,6 +9,7 @@
 #' @param method Character string specifying validation method: "split", "K-fold", or "boot"
 #' @param formulas A list of functional forms for fixed effects of longitudinal submodel.
 #' @param random_effect_formulas A list of functional forms for random effects of longitudinal submodel.
+#' @param families A list of distribution families (e.g., gaussian(), binomial())  that corresponds one-to-one with the 'formulas' list. This parameter dictates  the underlying modeling engine: 'gaussian' triggers linear mixed models (lme),  while others trigger generalized linear mixed models (mixed_model).
 #' @param form_splines A list of functional forms for the dynamic effects of longitudinal covariates，with default NULL.
 #' @param surv_formula Functional form of the survival submodel.
 #' @param seq_len Numeric vector of time points for prediction evaluation
@@ -44,7 +45,7 @@
 #' "proteinuria"=~ value(proteinuria) * (yearse+I(yearse^2)))
 #' jointFit1 <- jm(cox, list(fit1,fit2), time_var = "yearse",seed=1,n_chains = 1L, functional_forms = form_splines)
 #' JM_pre<-predictive_JM(jointFit1,renal,method="K-fold",formulas=list(GFR~weight+age+ns(yearse,3),proteinuria~age+ns(yearse,3)),random_effect_formulas=list(~yearse|id,~yearse|id),surv_formula=Surv(time,status)~age+sex+weight,form_splines=form_splines,seq_len=seq(0,10,by=1),w=5,n=1,K=5,seed=1)
-predictive_JM <- function(jointFit, data, method, formulas, random_effect_formulas,
+predictive_JM <- function(jointFit, data, method, formulas, random_effect_formulas,families =list(gaussian(),gaussian()),
                           form_splines = NULL, surv_formula, seq_len, w, n, K, seed, r,
                           n_group = 10) {
 
@@ -83,7 +84,7 @@ predictive_JM <- function(jointFit, data, method, formulas, random_effect_formul
         data_test.id <- data.id[-which(data.id[[id]] %in% ID), ]
 
         # Fit longitudinal models
-        fit <- fit_multiple_lme(data_train, formulas, random_effect_formulas)
+        fit <- fit_multiple_mixed(data_train, formulas, random_effect_formulas,families)
         surv_formula <- as.formula(surv_formula)
         cox <- coxph(surv_formula, data = data_train.id)
 
@@ -153,7 +154,7 @@ predictive_JM <- function(jointFit, data, method, formulas, random_effect_formul
           test_data <- data[which(data[[id]] %in% index), ]
 
           # Fit models
-          fit <- fit_multiple_lme(train_data, formulas, random_effect_formulas)
+          fit <- fit_multiple_mixed(train_data, formulas, random_effect_formulas,families)
           surv_formula <- as.formula(surv_formula)
           cox <- coxph(surv_formula, data = train_data.id, x = TRUE)
           jointFit1 <- jm(cox, fit, time_var = jointFit$model_info$var_names$time_var,
@@ -273,7 +274,7 @@ predictive_JM <- function(jointFit, data, method, formulas, random_effect_formul
         train_data.id <- train_data.id[order(train_data.id[[id]]), ]
 
         # Fit bootstrap model
-        fit <- fit_multiple_lme(train_data, formulas, random_effect_formulas)
+        fit <- fit_multiple_mixed(train_data, formulas, random_effect_formulas,families)
         surv_formula <- as.formula(surv_formula)
         cox <- coxph(surv_formula, data = train_data.id, x = TRUE)
         jointFit1 <- jm(cox, fit, time_var = jointFit$model_info$var_names$time_var,
@@ -429,20 +430,38 @@ tvC_index<-function(object,newdata,Tstart,Thoriz = NULL, Dt = NULL){
   }
   return(con/total)
 }
-fit_multiple_lme <-function(data,formulas,random_effect_formulas){
-  models<-list()
 
-  if (length(formulas) != length(random_effect_formulas)) {
-    stop("The number of formulas must be the same as the number of random effect formulas.")
+
+fit_multiple_mixed <- function(data, formulas, random_effect_formulas, families) {
+  models <- list()
+
+  # Check if all input lists have the exact same length
+  if (length(formulas) != length(random_effect_formulas) || length(formulas) != length(families)) {
+    stop("The number of fixed effect formulas, random effect formulas, and families must be exactly the same.")
   }
-  for (i in 1:length(formulas)){
+
+  for (i in seq_along(formulas)){
     formula <- formulas[[i]]
     random_effect_formula <- random_effect_formulas[[i]]
+    current_family <- families[[i]]
     model_name <- paste("model", i, sep = "_")
 
-
-    models[[model_name]] <- lme(formula, random = random_effect_formula, data = data,control = list(opt = "optim"))
+    # Determine the distribution family for the current model
+    if (current_family$family == "gaussian") {
+      # [Continuous Outcome] Use your original lme function
+      models[[model_name]] <- lme(fixed = formula,
+                                  random = random_effect_formula,
+                                  data = data,
+                                  control = list(opt = "optim"))
+    } else {
+      # [Categorical Outcome] Use mixed_model from GLMMadaptive
+      models[[model_name]] <- mixed_model(fixed = formula,
+                                          random = random_effect_formula,
+                                          data = data,
+                                          family = current_family)
+    }
   }
+
   return(models)
 }
 
