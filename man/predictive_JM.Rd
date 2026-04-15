@@ -17,6 +17,8 @@ predictive_JM(jointFit,data,method,formulas,random_effect_formulas,form_splines,
 
 \item{random_effect_formulas}{A list of functional forms for random effects of longitudinal submodel.}
 
+\item{families}{A list of distribution families (e.g., gaussian(), binomial())  that corresponds one-to-one with the 'formulas' list. This parameter dictates  the underlying modeling engine: 'gaussian' triggers linear mixed models (lme),  while others trigger generalized linear mixed models (mixed_model).}
+
 \item{form_splines}{A list of functional forms for the dynamic effects of longitudinal covariates，with default NULL.}
 
 \item{surv_formula}{Functional form of the survival submodel.}
