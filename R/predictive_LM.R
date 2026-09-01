@@ -967,4 +967,189 @@ cal_auc<-function(model,data,pred.t,time,status){
   auc0<-auc$AUC
   return(auc0)
 }
+cal_dca <- function(
+    pred_surv,
+    data,
+    s,
+    w,
+    original_time = "original_time",
+    original_status = "original_status",
+    thresholds = seq(0.05, 0.50, by = 0.01),
+    model_label = "Prediction model"
+) {
 
+  # ============================================
+  # 1. Construct DCA data
+  # ============================================
+
+  dca_data <- data.frame(
+    follow_time = data[[original_time]] - s,
+    status = data[[original_status]],
+    risk = 1 - pred_surv
+  )
+
+
+  # ============================================
+  # 2. Remove invalid observations
+  # ============================================
+
+  dca_data <- dca_data[
+    complete.cases(dca_data) &
+      is.finite(dca_data$follow_time) &
+      is.finite(dca_data$status) &
+      is.finite(dca_data$risk) &
+      dca_data$follow_time > 0 &
+      dca_data$risk >= 0 &
+      dca_data$risk <= 1,
+  ]
+
+
+  # No valid observations
+  if (nrow(dca_data) == 0) {
+
+    warning(
+      paste0(
+        "DCA skipped at prediction time ",
+        s,
+        ": no valid observations."
+      )
+    )
+
+    return(NULL)
+  }
+
+
+  # ============================================
+  # 3. Check follow-up beyond prediction horizon
+  # ============================================
+
+  if (!any(dca_data$follow_time > w)) {
+
+    warning(
+      paste0(
+        "DCA skipped at prediction time ",
+        s,
+        ": no observations beyond the prediction horizon."
+      )
+    )
+
+    return(NULL)
+  }
+
+
+  # ============================================
+  # 4. Check events within prediction horizon
+  # ============================================
+
+  if (!any(
+    dca_data$status == 1 &
+      dca_data$follow_time <= w
+  )) {
+
+    warning(
+      paste0(
+        "DCA skipped at prediction time ",
+        s,
+        ": no events observed within the prediction horizon."
+      )
+    )
+
+    return(NULL)
+  }
+
+
+  # ============================================
+  # 5. Check variability of predicted risk
+  # ============================================
+
+  if (length(unique(dca_data$risk)) < 2) {
+
+    warning(
+      paste0(
+        "DCA skipped at prediction time ",
+        s,
+        ": predicted risks have no variability."
+      )
+    )
+
+    return(NULL)
+  }
+
+
+  # ============================================
+  # 6. Decision curve analysis
+  # ============================================
+
+  fit <- tryCatch(
+
+    dcurves::dca(
+      survival::Surv(
+        follow_time,
+        status
+      ) ~ risk,
+      data = dca_data,
+      time = w,
+      thresholds = thresholds,
+      label = list(
+        risk = model_label
+      )
+    ),
+
+    error = function(e) {
+
+      warning(
+        paste0(
+          "DCA failed at prediction time ",
+          s,
+          ": ",
+          conditionMessage(e)
+        )
+      )
+
+      return(NULL)
+    }
+  )
+
+
+  if (is.null(fit)) {
+    return(NULL)
+  }
+
+
+  # ============================================
+  # 7. Extract results
+  # ============================================
+
+  out <- tryCatch(
+
+    as.data.frame(
+      tibble::as_tibble(fit)
+    ),
+
+    error = function(e) {
+
+      warning(
+        paste0(
+          "Failed to extract DCA results at prediction time ",
+          s,
+          ": ",
+          conditionMessage(e)
+        )
+      )
+
+      return(NULL)
+    }
+  )
+
+
+  if (is.null(out)) {
+    return(NULL)
+  }
+
+
+  # Add prediction time
+  out$time_point <- s
+
+
+  return(out)
+}
